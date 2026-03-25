@@ -25,28 +25,28 @@ species_list = list(wood_density.keys()) + ["Other"]
 # INPUT SECTION
 # -----------------------------
 st.header("📥 Tree Input Data")
-# Location Input
-st.subheader("📍 Location Data")
 
+# 📍 Location
+st.subheader("📍 Location Data")
 lat = st.number_input("Latitude", value=0.0, format="%.6f")
 lon = st.number_input("Longitude", value=0.0, format="%.6f")
 
-# Plot Information
+# 🗂 Plot Info
 st.subheader("🗂 Plot Information")
-
 plot_id = st.text_input("Plot ID (e.g., P1, Plot_A)")
 tree_no = st.number_input("Tree Number", min_value=1, step=1)
 
+# 🌿 Species
 species = st.selectbox("Species", species_list)
 
-# If "Other" selected → ask user to input species name
 if species == "Other":
-    custom_species = st.text_input("Enter Species Name")
-    species_final = custom_species
+    species_final = st.text_input("Enter Species Name")
     rho = st.number_input("Enter Wood Density (ρ)", value=0.35)
 else:
     species_final = species
     rho = wood_density[species]
+
+# 🌳 Tree Measurements
 D30 = st.number_input("D30 (cm)", value=2.0)
 H = st.number_input("Total Height (cm)", value=100.0)
 
@@ -60,8 +60,6 @@ ch = st.number_input("Canopy Height (cm)", value=50.0)
 CA = ((cw * cl) / 2) ** 2 * math.pi
 canopy_depth = H - ch
 CV = CA * canopy_depth
-
-rho = wood_density.get(species, 0.35)
 
 # -----------------------------
 # BIOMASS FUNCTION
@@ -87,39 +85,44 @@ def calculate_agb(species, D30, H, CA, CV, rho):
         return 0.0521 * (D30**0.827) * (H**0.869) * (CA**0.227)
 
 # -----------------------------
-# SINGLE BUTTON (FIXED)
+# CALCULATE + SAVE BUTTON
 # -----------------------------
 if st.button("🌿 Calculate & Save AGB"):
 
-    agb = calculate_agb(species, D30, H, CA, CV, rho)
+    # Prevent empty species in "Other"
+    if species == "Other" and species_final.strip() == "":
+        st.warning("⚠️ Please enter species name for 'Other'")
+    else:
+        agb = calculate_agb(species, D30, H, CA, CV, rho)
 
-    st.success(f"AGB per tree: {agb:.2f} gm")
+        st.success(f"AGB per tree: {agb:.2f} gm")
 
-    # Save record
-record = {
-    "Plot ID": plot_id,
-    "Tree No": tree_no,
-    "Latitude": lat,
-    "Longitude": lon,
-    "Species": species_final,
-    "D30 (cm)": D30,
-    "Height (cm)": H,
-    "Canopy Width": cw,
-    "Canopy Length": cl,
-    "Canopy Height": ch,
-    "Wood Density": rho,
-    "Canopy Area": CA,
-    "Canopy Volume": CV,
-    "AGB (gm)": agb
-}
-    st.session_state.data.append(record)
+        # Save record
+        record = {
+            "Plot ID": plot_id,
+            "Tree No": tree_no,
+            "Latitude": lat,
+            "Longitude": lon,
+            "Species": species_final,
+            "D30 (cm)": D30,
+            "Height (cm)": H,
+            "Canopy Width": cw,
+            "Canopy Length": cl,
+            "Canopy Height": ch,
+            "Wood Density": rho,
+            "Canopy Area": CA,
+            "Canopy Volume": CV,
+            "AGB (gm)": agb
+        }
 
-    st.write("### Derived Values")
-    st.write(f"Canopy Area: {CA:.2f} cm²")
-    st.write(f"Canopy Volume: {CV:.2f} cm³")
+        st.session_state.data.append(record)
+
+        st.write("### Derived Values")
+        st.write(f"Canopy Area: {CA:.2f} cm²")
+        st.write(f"Canopy Volume: {CV:.2f} cm³")
 
 # -----------------------------
-# SHOW DATA + DOWNLOAD
+# DISPLAY DATA
 # -----------------------------
 if st.session_state.data:
 
@@ -127,7 +130,8 @@ if st.session_state.data:
 
     st.write("## 📊 Collected Data")
     st.dataframe(df)
-    # CSV Download
+
+    # 📥 Download CSV
     csv = df.to_csv(index=False).encode('utf-8')
 
     st.download_button(
@@ -136,5 +140,15 @@ if st.session_state.data:
         file_name='mangrove_biomass.csv',
         mime='text/csv',
     )
-    map_df = pd.DataFrame(st.session_state.data)[["Latitude", "Longitude"]]
+
+    # 🌍 Map Visualization
+    st.write("## 🌍 Tree Locations")
+    map_df = df[["Latitude", "Longitude"]]
     st.map(map_df)
+
+# -----------------------------
+# CLEAR DATA BUTTON
+# -----------------------------
+if st.button("🗑 Clear All Data"):
+    st.session_state.data = []
+    st.success("All data cleared!")
