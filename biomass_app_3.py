@@ -141,11 +141,6 @@ if st.session_state.data:
         mime='text/csv',
     )
 
-    # 🌍 Map Visualization
-    st.write("## 🌍 Tree Locations")
-    map_df = df[["Latitude", "Longitude"]]
-    st.map(map_df)
-
 # -----------------------------
 # CLEAR DATA BUTTON
 # -----------------------------
