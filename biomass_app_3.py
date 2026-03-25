@@ -25,9 +25,28 @@ species_list = list(wood_density.keys()) + ["Other"]
 # INPUT SECTION
 # -----------------------------
 st.header("📥 Tree Input Data")
+# Location Input
+st.subheader("📍 Location Data")
+
+lat = st.number_input("Latitude", value=0.0, format="%.6f")
+lon = st.number_input("Longitude", value=0.0, format="%.6f")
+
+# Plot Information
+st.subheader("🗂 Plot Information")
+
+plot_id = st.text_input("Plot ID (e.g., P1, Plot_A)")
+tree_no = st.number_input("Tree Number", min_value=1, step=1)
 
 species = st.selectbox("Species", species_list)
 
+# If "Other" selected → ask user to input species name
+if species == "Other":
+    custom_species = st.text_input("Enter Species Name")
+    species_final = custom_species
+    rho = st.number_input("Enter Wood Density (ρ)", value=0.35)
+else:
+    species_final = species
+    rho = wood_density[species]
 D30 = st.number_input("D30 (cm)", value=2.0)
 H = st.number_input("Total Height (cm)", value=100.0)
 
@@ -77,19 +96,22 @@ if st.button("🌿 Calculate & Save AGB"):
     st.success(f"AGB per tree: {agb:.2f} gm")
 
     # Save record
-    record = {
-        "Species": species,
-        "D30 (cm)": D30,
-        "Height (cm)": H,
-        "Canopy Width": cw,
-        "Canopy Length": cl,
-        "Canopy Height": ch,
-        "Wood Density": rho,
-        "Canopy Area": CA,
-        "Canopy Volume": CV,
-        "AGB (gm)": agb
-    }
-
+record = {
+    "Plot ID": plot_id,
+    "Tree No": tree_no,
+    "Latitude": lat,
+    "Longitude": lon,
+    "Species": species_final,
+    "D30 (cm)": D30,
+    "Height (cm)": H,
+    "Canopy Width": cw,
+    "Canopy Length": cl,
+    "Canopy Height": ch,
+    "Wood Density": rho,
+    "Canopy Area": CA,
+    "Canopy Volume": CV,
+    "AGB (gm)": agb
+}
     st.session_state.data.append(record)
 
     st.write("### Derived Values")
@@ -105,7 +127,6 @@ if st.session_state.data:
 
     st.write("## 📊 Collected Data")
     st.dataframe(df)
-
     # CSV Download
     csv = df.to_csv(index=False).encode('utf-8')
 
@@ -115,3 +136,5 @@ if st.session_state.data:
         file_name='mangrove_biomass.csv',
         mime='text/csv',
     )
+    map_df = pd.DataFrame(st.session_state.data)[["Latitude", "Longitude"]]
+    st.map(map_df)
